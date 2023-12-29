@@ -1,0 +1,64 @@
+---
+title: "Lab4"
+author: "Denys Kushnirenko"
+date: "2023-12-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. For three (or more) gradations of a qualitative variable, output the values for each gradation in the form of line charts (or boxplots) and, if possible, the mean values (preferably in different colors and with labels)
+
+```{r, echo=FALSE}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(qqplotr)
+library(ggpubr)
+library(nortest)
+dataset <- read.csv(".\\fatalities_isr_pse_conflict_2000_to_2023.csv")
+dataset <- dataset %>%   
+  filter(citizenship == 'Israeli' | citizenship == 'Palestinian' | citizenship == 'Jordanian')
+dataset$citizenship <- factor(dataset$citizenship)
+```
+```{r}
+boxplot(age ~ citizenship, data = dataset,
+        xlab = "Citizenship", ylab = "Age", col = c("red", "green", "blue"))
+
+```
+
+## 2. Check the fulfillment of the assumptions of the ANOVA.
+
+Check the normality of the model residuals:
+
+```{r}
+mod1 <- aov(age ~ citizenship, data = dataset)
+residuals <- mod1$residuals
+hist(mod1$residuals, main = "Histogram of the model residuals", freq = F, col = "green1")
+ggqqplot(mod1$residuals, color = "green3")
+length(mod1$residuals)
+lillie.test(mod1$residuals)
+```
+We see a noticeable deviation from the normal distribution of the model residuals. We can conduct a rank-based analysis of variance by Kruskal-Wallis - a counterpart of the classical one-way analysis of variance.
+Check the homogeneity of variances:
+```{r}
+tapply(dataset$age, dataset$citizenship, var, na.rm=T)
+```
+The condition of homogeneity of variances is also not met.
+
+## 3. Conduct an ANOVA test for that data
+
+ANOVA by Kruskal-Wallis:
+
+```{r}
+kruskal.test(age ~ citizenship, data = dataset)
+
+```
+Conduct an ANOVA test with Welch's correction:
+
+```{r}
+oneway.test(age ~ citizenship, data = dataset)
+```
+Based on the results of these studies, we have grounds to reject the null hypothesis of the equality of mathematical expectations in all groups of observations.
